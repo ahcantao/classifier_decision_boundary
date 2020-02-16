@@ -1,9 +1,15 @@
-#Authors: Adriano Henrique Cant„o and JosÈ Augusto Baranauskas
+#Authors: Adriano Henrique Cant√£o and Jos√© Augusto Baranauskas
 #August 2019
 
-#TO-DO: boundary(models, datasetName, inducerName, k, setFiletype)
 #For teaching: User manually calls the function passing the model, dataset name and its libraries
-#load or install libraries, then execute.
+
+#installing libraries
+installPackages <- function(packs) {
+  for (pack in packs){
+    if (!pack %in% installed.packages()) install.packages(pack)
+  }
+}
+installPackages(packs=c("ggplot2","grid","gridExtra","mlbench","caret","e1071","C50","rpart","randomForest","nnet","neuralnet"))
 
 #function to get plot ids to arrange the plotting order in grid.arrange()
 select_grobs <- function(lay) {
@@ -12,8 +18,10 @@ select_grobs <- function(lay) {
 } 
 
 boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){ 
+  set.seed(2019)
   setFilename <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", datasetName, perl=TRUE, ignore.case=TRUE)
-  setFilename <- paste( inducerName, ".", setFilename, ".", setFiletype, sep="")
+  #  setFilename <- paste( inducerName, ".", setFilename, ".", setFiletype, sep="")
+  setFilename <- paste( setFilename, ".", inducerName, ".", setFiletype, sep="")
   
   print( paste("Dataset.: ",datasetName, sep="") )
   print( paste("Filename: ",setFilename, sep="") )
@@ -52,7 +60,10 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   for(mod in models){
     i = i+1
     model <- eval( parse( text=mod ) )
-    plotTitle <- paste(inducerName, k[i])
+    prediction <- predict(model, data[,1:2],type = "class")
+    conf_matrix <- table(prediction, data[,3])
+    accuracy <- (sum(diag(conf_matrix)) / sum(conf_matrix)) * 100
+    plotTitle <- paste(inducerName, k[i], '(acc:',round(accuracy,2),'%)')
     Z <- predict(model, grid.df, type = "class")
     if(inducerName == "Deep Learning"){
       Z = round(Z[,2])
@@ -67,7 +78,7 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
             axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none', 
             plot.title = element_text(size = 15, face = "bold", hjust = 0.5, color = "brown") )
   }
-  #arrange the plots according to the quantity of plots
+  #arrange the plots according to the number of plots
   if(length(plotList) == 2){
     hlay <- rbind(c(1, 2))
   }else if(length(plotList) == 3){
@@ -97,7 +108,7 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   }else {
     print("It is configured only up to 10 plots in a single image. If you need more, add it right before this message.")
   }
-  #arrange many plots inside a single one
+  #arrange many plots inside a single one - the line bellow print the output 
   grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay)
   #save to file
   ggsave(filename = setFilename,
@@ -110,7 +121,8 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   #return (plotList)
 }
 #-----------------------------------------------------------------------
-outputPath = "M:/Est·gio PAE/201902 - IA/Boundaries/"
+# outputPath = "M:/Est√°gio PAE/201902 - IA/Boundaries/"
+outputPath = "C:/temp/boundaries/"
 setFiletype <- "pdf"
 require(mlbench)
 require(ggplot2)
@@ -120,7 +132,7 @@ require(gridExtra)
 
 datasetNames <- c("mlbench.2dnormals(n=1000, cl=2)",
                   "mlbench.cassini(n=1000)",
-                  "mlbench.hypercube(n=1000, d=2, sd=0.1)",
+                  "mlbench.hypercube(n=1000, d=2, sd=0.3)",
                   "mlbench.circle(n=1000, d=2)",
                   "mlbench.ringnorm(n=1000, d=2)",
                   "mlbench.shapes(n=1000)",
@@ -131,8 +143,10 @@ datasetNames <- c("mlbench.2dnormals(n=1000, cl=2)",
                   "mlbench.threenorm(n=1000, d=2)",
                   "mlbench.twonorm(n=1000, d=2)",
                   "mlbench.xor(n=1000, d=2)")
+# datasetNames <- c("mlbench.hypercube(n=200, d=2, sd=0.3)")
+#datasetNames <- c("mlbench.simplex(n = 300, d = 2, sd = 0.3)")
 
-set.seed(2019)
+#set.seed(2019)
 for(datasetName in datasetNames){
   # KNN
   require(caret)
@@ -144,7 +158,7 @@ for(datasetName in datasetNames){
                "knn3(class ~ ., data=data, k = k[4])",
                "knn3(class ~ ., data=data, k = k[5])")
   boundary(models, datasetName, inducerName, k, setFiletype)
-  #----------------------------------------------------------------
+  #---------------------------------------------------------------- 
   # SVM
   require(e1071) #cart
   inducerName <- "SVM"
@@ -205,36 +219,3 @@ for(datasetName in datasetNames){
 # boundary(models, datasetName, inducerName, k="", setFiletype)
 # grid.arrange( grobs=plotList, ncol=length(plotList))
 # 
-
-
-for (datasetName in datasetNames){
-  # #Neural Network
-  require(nnet)
-  inducerName <- "ANN: "
-  k = c("1","5","10", "50", "100")
-  models <- c("nnet(class ~ ., data=data, size = 1, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 5, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 10, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 50, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 100, maxit = 1000)")
-  set.seed(2019)
-  boundary(models, datasetName, inducerName, k=k, setFiletype)
-}
- 
-require(neuralnet)
-inducerName <- "Deep Learning: "
-set.seed(2019)
-k = c("[3]", "[3,7]", "[3,7,5]", "[3,7,5,2]")
-models <- c("neuralnet(class ~ ., data=data, hidden = c(5))",
-            "neuralnet(class ~ ., data=data, hidden = c(5,7))",
-            "neuralnet(class ~ ., data=data, hidden = c(5,7,7))",
-            "neuralnet(class ~ ., data=data, hidden = c(5,7,7,5))")
-boundary(models, datasetName, inducerName, k=k, setFiletype)
-
-
-
-inducerName <- "Deep Learning"
-set.seed(2019)
-k = "[a,b]"
-models <- "neuralnet(class ~ ., data=data, hidden = c(8,7,6,5))"
-boundary(models, datasetName, inducerName, k=k, setFiletype)
