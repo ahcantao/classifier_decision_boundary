@@ -20,50 +20,65 @@ select_grobs <- function(lay) {
 boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){ 
   set.seed(2019)
   setFilename <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", datasetName, perl=TRUE, ignore.case=TRUE)
-  #  setFilename <- paste( inducerName, ".", setFilename, ".", setFiletype, sep="")
+#  setFilename <- paste( inducerName, ".", setFilename, ".", setFiletype, sep="")
   setFilename <- paste( setFilename, ".", inducerName, ".", setFiletype, sep="")
   
   print( paste("Dataset.: ",datasetName, sep="") )
   print( paste("Filename: ",setFilename, sep="") )
   cat("\n")
   
+  #creating and preparing the dataset
   p <- eval( parse( text=datasetName ) )
   data <- data.frame(p$x[,1], p$x[,2], p$class)
   names(data) <- c("x1","x2","class")
   
+  #splittng data into train(data) and test
+  sample_index <- sample(seq_len(nrow(data)), size = floor(nrow(data) / 2), replace = FALSE)
+  test <- data[-sample_index, ]
+  data <- data[sample_index, ]
+
+  #replacing the text 'samples' by the variable value and save the whole string as title
+  title <- gsub("samples", samples, datasetName)
+  
+  #preparing background grid area
   x1_min <- min(p$x[,1])-0.2
   x1_max <- max(p$x[,1])+0.2
   x2_min <- min(p$x[,2])-0.2
   x2_max <- max(p$x[,2])+0.2
+  hs <- 0.05 #change by a variable number...
+  grid <- as.matrix(expand.grid(seq(x1_min, x1_max, by = hs), seq(x2_min, x2_max, by = hs)))
+  grid.df <- as.data.frame(grid)
+  colnames(grid.df) <- colnames(data[,1:2])
   
-  title <- datasetName
-  
-  #get the dataset without any model
+  #saving the raw dataset - without any model
   plotList <- list()
   plotList[[length(plotList)+1]] <- 
-    ggplot(data) + geom_point(aes(x=x1, y=x2, color = as.character(class)), size = 1) + theme_bw(base_size = 15) +
-    xlim(x1_min, x1_max) + ylim(x2_min, x2_max) +
+    ggplot(data) + 
+    geom_point(aes(x=x1, y=x2, color = as.character(class)), size = 1) + 
+    theme_bw(base_size = 15) +
+    xlim(x1_min, x1_max) + 
+    ylim(x2_min, x2_max) +
     ggtitle( title ) +
     coord_fixed(ratio = 0.8) +
     theme(axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
           axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none', 
-          plot.title = element_text(size = 15, face = "bold", hjust = 0.5, color = "brown") )
-  
-  #plots dataset and decision boundary
-  hs <- 0.05
-  grid <- as.matrix(expand.grid(seq(x1_min, x1_max, by = hs), seq(x2_min, x2_max, by = hs)))
-  grid.df <- as.data.frame(grid)
-  colnames(grid.df) <- colnames(data[,1:2])
+          plot.title = element_text(size = 10, face = "bold", hjust = 0.5, color = "brown") )
   Z <- NULL
   require(caret)
   i = 0
   for(mod in models){
     i = i+1
     model <- eval( parse( text=mod ) )
-    prediction <- predict(model, data[,1:2],type = "class")
-    conf_matrix <- table(prediction, data[,3])
-    accuracy <- (sum(diag(conf_matrix)) / sum(conf_matrix)) * 100
-    plotTitle <- paste(inducerName, k[i], '(acc:',round(accuracy,2),'%)')
+    #getting accuracy in train data
+    prediction_train <- predict(model, data[,1:2],type = "class")
+    conf_matrix_train <- table(prediction_train, data[,3])
+    accuracy_train <- (sum(diag(conf_matrix_train)) / sum(conf_matrix_train)) * 100
+    #getting accuracy in test data
+    prediction_test <- predict(model, test[,1:2],type = "class")
+    conf_matrix_test <- table(prediction_test, test[,3])
+    accuracy_test <- (sum(diag(conf_matrix_test)) / sum(conf_matrix_test)) * 100
+    plotTitle <- paste(inducerName, k[i])
+    plotSubtitle <- paste("train acc:",round(accuracy_train,2),"% - test acc:",round(accuracy_test,2),"%")
     Z <- predict(model, grid.df, type = "class")
     if(inducerName == "Deep Learning"){
       Z = round(Z[,2])
@@ -72,11 +87,17 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
       ggplot()+
       geom_tile(aes_string(x = grid[,1],y = grid[,2],fill= as.factor(Z) ), alpha = 0.3, show.legend = F)+ 
       geom_point(data = data, aes(x=x1, y=x2, color = as.character(class)), size = 1) + theme_bw(base_size = 15) +
-      ggtitle( plotTitle ) +
+      #ggtitle( plotTitle ) +
+#       ggtitle( expression(atop(parse(plotTitle), italic("Location")))) +
+      labs(title = plotTitle, subtitle = plotSubtitle) +
       coord_fixed(ratio = 0.8) + 
       theme(axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
             axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none', 
-            plot.title = element_text(size = 15, face = "bold", hjust = 0.5, color = "brown") )
+            plot.title  = element_text(size = 15, face = "bold", hjust = 0.5, vjust = -1, color = "red"),
+            plot.subtitle=element_text(size = 10, face ="plain", hjust = 0.1, vjust = -1, color = "brown"))
+      
+#       theme(plot.title=element_text(size=25, hjust=0.5, face="bold", colour="maroon", vjust=-1))
+#       theme(plot.subtitle=element_text(size=18, hjust=0.5, face="italic", color="black"))
   }
   #arrange the plots according to the number of plots
   if(length(plotList) == 2){
@@ -108,9 +129,9 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   }else {
     print("It is configured only up to 10 plots in a single image. If you need more, add it right before this message.")
   }
-  #arrange many plots inside a single one - the line bellow print the output 
+  #arranging many plots inside a single one - the line bellow print the output 
   grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay)
-  #save to file
+  #saving to file
   ggsave(filename = setFilename,
          #plot = arrangeGrob( grobs=plotList, ncol=length(plotList)),
          plot = grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay),
@@ -122,6 +143,7 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
 }
 #-----------------------------------------------------------------------
 # outputPath = "M:/Estágio PAE/201902 - IA/Boundaries/"
+samples <- 200
 outputPath = "C:/temp/boundaries/"
 setFiletype <- "pdf"
 require(mlbench)
@@ -130,23 +152,23 @@ require(caret)
 require(lattice)
 require(gridExtra)
 
-datasetNames <- c("mlbench.2dnormals(n=1000, cl=2)",
-                  "mlbench.cassini(n=1000)",
-                  "mlbench.hypercube(n=1000, d=2, sd=0.3)",
-                  "mlbench.circle(n=1000, d=2)",
-                  "mlbench.ringnorm(n=1000, d=2)",
-                  "mlbench.shapes(n=1000)",
-                  "mlbench.simplex(n = 1000, d = 2, sides = 1, sd = 0.1, center=TRUE)",
-                  "mlbench.smiley(n=1000, sd1 = 0.1, sd2 = 0.05)",
-                  "mlbench.spirals(n=1000,cycles=1,sd=0.05)",
-                  "mlbench.spirals(n=1000,cycles=3,sd=0.05)",
-                  "mlbench.threenorm(n=1000, d=2)",
-                  "mlbench.twonorm(n=1000, d=2)",
-                  "mlbench.xor(n=1000, d=2)")
-# datasetNames <- c("mlbench.hypercube(n=200, d=2, sd=0.3)")
-#datasetNames <- c("mlbench.simplex(n = 300, d = 2, sd = 0.3)")
+datasetNames <- c("mlbench.2dnormals(n=samples, cl=2)",
+                  "mlbench.cassini  (n=samples)",
+                  "mlbench.hypercube(n=samples, d=2, sd=0.3)",
+                  "mlbench.circle   (n=samples, d=2)",
+                  "mlbench.ringnorm (n=samples, d=2)",
+                  "mlbench.shapes   (n=samples)",
+                  "mlbench.simplex  (n=samples, d=2, sd = 0.1)",
+                  "mlbench.smiley   (n=samples, sd1 = 0.1, sd2 = 0.05)",
+                  "mlbench.spirals  (n=samples, cycles=1, sd=0.05)",
+                  "mlbench.spirals  (n=samples, cycles=3, sd=0.05)",
+                  "mlbench.threenorm(n=samples, d=2)",
+                  "mlbench.twonorm  (n=samples, d=2)",
+                  "mlbench.xor      (n=samples, d=2)")
+# datasetNames <- c("mlbench.hypercube(n=samples, d=2, sd=0.3)")
+#datasetNames <- c("mlbench.simplex(n = samples, d = 2, sd = 0.3)")
 
-#set.seed(2019)
+samples <- samples * 2
 for(datasetName in datasetNames){
   # KNN
   require(caret)
