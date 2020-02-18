@@ -1,7 +1,5 @@
 #Authors: Adriano Henrique Cantão and José Augusto Baranauskas
-#August 2019
-
-#For teaching: User manually calls the function passing the model, dataset name and its libraries
+#First version date: August 2019
 
 #installing libraries
 installPackages <- function(packs) {
@@ -9,7 +7,8 @@ installPackages <- function(packs) {
     if (!pack %in% installed.packages()) install.packages(pack)
   }
 }
-installPackages(packs=c("ggplot2","grid","gridExtra","mlbench","caret","e1071","C50","rpart","randomForest","nnet","neuralnet"))
+installPackages(packs=c("ggplot2","grid","gridExtra","mlbench","caret","e1071",
+                        "C50","rpart","randomForest","nnet","neuralnet","mlogit"))
 
 #function to get plot ids to arrange the plotting order in grid.arrange()
 select_grobs <- function(lay) {
@@ -18,9 +17,8 @@ select_grobs <- function(lay) {
 } 
 
 boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){ 
-  set.seed(2019)
+  set.seed(2020)
   setFilename <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", datasetName, perl=TRUE, ignore.case=TRUE)
-#  setFilename <- paste( inducerName, ".", setFilename, ".", setFiletype, sep="")
   setFilename <- paste( setFilename, ".", inducerName, ".", setFiletype, sep="")
   
   print( paste("Dataset.: ",datasetName, sep="") )
@@ -36,9 +34,10 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   sample_index <- sample(seq_len(nrow(data)), size = floor(nrow(data) / 2), replace = FALSE)
   test <- data[-sample_index, ]
   data <- data[sample_index, ]
-
+  
+  plotTitle <- "Dataset"
   #replacing the text 'samples' by the variable value and save the whole string as title
-  title <- gsub("samples", samples, datasetName)
+  plotSubtitle <- gsub("samples", samples/2, datasetName)
   
   #preparing background grid area
   x1_min <- min(p$x[,1])-0.2
@@ -58,11 +57,12 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
     theme_bw(base_size = 15) +
     xlim(x1_min, x1_max) + 
     ylim(x2_min, x2_max) +
-    ggtitle( title ) +
+    labs(title = plotTitle, subtitle = plotSubtitle) +
     coord_fixed(ratio = 0.8) +
     theme(axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
-          axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none', 
-          plot.title = element_text(size = 10, face = "bold", hjust = 0.5, color = "brown") )
+          axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none',
+          plot.title  = element_text(size = 15, face = "bold", hjust = 0.5, vjust = -1, color = "black"),
+          plot.subtitle=element_text(size = 10, face ="plain", hjust = 0.1, vjust = -1, color = "brown"))
   Z <- NULL
   require(caret)
   i = 0
@@ -77,27 +77,23 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
     prediction_test <- predict(model, test[,1:2],type = "class")
     conf_matrix_test <- table(prediction_test, test[,3])
     accuracy_test <- (sum(diag(conf_matrix_test)) / sum(conf_matrix_test)) * 100
-    plotTitle <- paste(inducerName, k[i])
-    plotSubtitle <- paste("train acc:",round(accuracy_train,2),"% - test acc:",round(accuracy_test,2),"%")
+    plotTitle <- paste0(inducerName, k[i])
+    plotSubtitle <- paste("training accuracy:",round(accuracy_train,2),"% - test accuracy:",round(accuracy_test,2),"%")
     Z <- predict(model, grid.df, type = "class")
     if(inducerName == "Deep Learning"){
       Z = round(Z[,2])
     }
     plotList[[length(plotList)+1]] <- 
       ggplot()+
-      geom_tile(aes_string(x = grid[,1],y = grid[,2],fill= as.factor(Z) ), alpha = 0.3, show.legend = F)+ 
-      geom_point(data = data, aes(x=x1, y=x2, color = as.character(class)), size = 1) + theme_bw(base_size = 15) +
-      #ggtitle( plotTitle ) +
-#       ggtitle( expression(atop(parse(plotTitle), italic("Location")))) +
+      geom_raster(aes_string(x = grid[,1],y = grid[,2],fill= as.factor(Z) ), alpha = 0.3, show.legend = F)+ 
+      geom_point(data = data, aes(x=x1, y=x2, color = as.character(class)), size = 1) + 
+      theme_bw(base_size = 15) +
       labs(title = plotTitle, subtitle = plotSubtitle) +
       coord_fixed(ratio = 0.8) + 
       theme(axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
             axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none', 
-            plot.title  = element_text(size = 15, face = "bold", hjust = 0.5, vjust = -1, color = "red"),
+            plot.title  = element_text(size = 15, face = "bold", hjust = 0.5, vjust = -1, color = "black"),
             plot.subtitle=element_text(size = 10, face ="plain", hjust = 0.1, vjust = -1, color = "brown"))
-      
-#       theme(plot.title=element_text(size=25, hjust=0.5, face="bold", colour="maroon", vjust=-1))
-#       theme(plot.subtitle=element_text(size=18, hjust=0.5, face="italic", color="black"))
   }
   #arrange the plots according to the number of plots
   if(length(plotList) == 2){
@@ -165,9 +161,8 @@ datasetNames <- c("mlbench.2dnormals(n=samples, cl=2)",
                   "mlbench.threenorm(n=samples, d=2)",
                   "mlbench.twonorm  (n=samples, d=2)",
                   "mlbench.xor      (n=samples, d=2)")
-# datasetNames <- c("mlbench.hypercube(n=samples, d=2, sd=0.3)")
-#datasetNames <- c("mlbench.simplex(n = samples, d = 2, sd = 0.3)")
-
+#double samples then split in half for testing accuracy
+samples = 200
 samples <- samples * 2
 for(datasetName in datasetNames){
   # KNN
@@ -209,29 +204,38 @@ for(datasetName in datasetNames){
   models <- "naiveBayes(class ~ ., data=data)"
   boundary(models, datasetName, inducerName, k="", setFiletype)
   #----------------------------------------------------------------
-  # #Neural Network: [qty neurons]
+  # #Artificial Neural Network: [qty neurons]
   require(nnet)
-  inducerName <- "ANN"
-  k = c("1","5","10", "50", "100")
-  models <- c("nnet(class ~ ., data=data, size = 1, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 5, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 10, maxit = 1000)",
-              "nnet(class ~ ., data=data, size = 50, maxit = 1000)",
+  inducerName <- "ANN; iters=100; neurons="
+  k = c(1,10,100,500,1000)
+  models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = k[4], maxit = 100, MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = k[5], maxit = 100, MaxNWts = 10000)")
+  boundary(models, datasetName, inducerName, k=k, setFiletype)
+  #----------------------------------------------------------------
+  #Artificial Neural Network: [qty iterations]
+  require(nnet)
+  inducerName <- "ANN; neurons=10; iters="
+  k = c(10,100,500,1000,10000)
+  models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = 10, maxit = k[4], MaxNWts = 10000)",
+              "nnet(class ~ ., data=data, size = 10, maxit = k[5], MaxNWts = 10000)")
+  boundary(models, datasetName, inducerName, k=k, setFiletype)
+  #----------------------------------------------------------------
+  #Artificial Neural Network: [fitting]
+  require(nnet)
+  inducerName <- "ANN; n=100; fitting="
+  k = c("entropy","linout","censored", "softmax")
+  models <- c("nnet(class ~ ., data=data, size = 100, maxit = 1000, entropy  = TRUE)",
+              "nnet(class ~ ., data=data, size = 100, maxit = 1000, linout   = TRUE)",
+              "nnet(class ~ ., data=data, size = 100, maxit = 1000, censored = TRUE)",
               "nnet(class ~ ., data=data, size = 100, maxit = 1000)")
   boundary(models, datasetName, inducerName, k=k, setFiletype)
   #----------------------------------------------------------------
-  #Deep Learning: [neurons on each hidden layer]
-  require(neuralnet)
-  inducerName <- "Deep Learning"
-  set.seed(2019)
-  k = c("[3]", "[3,7]", "[3,7,5]", "[3,7,5,2]")
-  models <- c("neuralnet(class ~ ., data=data, hidden = c(5))")
-              #"neuralnet(class ~ ., data=data, hidden = c(5,7))",
-              #"neuralnet(class ~ ., data=data, hidden = c(5,7,7))",
-              #"neuralnet(class ~ ., data=data, hidden = c(5,7,7,5))")
-  boundary(models, datasetName, inducerName, k=k, setFiletype)
-}
-
 # #--------NOT-WORKING---------------------------------------------
 # # Linear Discriminant Analysis
 # require(MASS)
@@ -241,3 +245,6 @@ for(datasetName in datasetNames){
 # boundary(models, datasetName, inducerName, k="", setFiletype)
 # grid.arrange( grobs=plotList, ncol=length(plotList))
 # 
+}
+
+
