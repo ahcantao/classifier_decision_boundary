@@ -1,7 +1,7 @@
-#Authors: Adriano Henrique Cantão and José Augusto Baranauskas
-#First version date: August 2019
+#Developed by: Adriano Henrique Cantão & José Augusto Baranauskas
+#First released on August, 2019
 
-#installing libraries
+#Installing needed packages - if not installed already
 installPackages <- function(packs) {
   for (pack in packs){
     if (!pack %in% installed.packages()) install.packages(pack)
@@ -16,14 +16,49 @@ select_grobs <- function(lay) {
   id[!is.na(id)]
 } 
 
-boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){ 
+#function to design the plot layout
+choose_layout <- function(size){
+  if(size == 2){
+    hlay <- rbind(c(1, 2))
+  }else if(size == 3){
+    hlay <- rbind(c(1, NA),
+                  c(2, 3))
+  }else if(size == 4){
+    hlay <- rbind(c(1, 2),
+                  c(3, 4))
+  }else if(size == 5){
+    hlay <- rbind(c( 1,2,3),
+                  c(NA,4,5))
+  }else if(size == 6){
+    hlay <- rbind(c(1,2,3),
+                  c(4,5,6))
+  }else if(size == 7){
+    hlay <- rbind(c( 1,2,3,4),
+                  c(NA,5,6,7))
+  }else if(size == 8){
+    hlay <- rbind(c(1,2,3,4),
+                  c(5,6,7,8))
+  }else if(size == 9){
+    hlay <- rbind(c( 1,2,3,4,5),
+                  c(NA,6,7,8,9))
+  }else if(size == 10){
+    hlay <- rbind(c(1,2,3,4,5 ),
+                  c(6,7,8,9,10))
+  }else {
+    print("It is configured only up to 10 plots in a single image. If you need more, add it right before this message.")
+  }
+  return(hlay)
+}
+
+boundary <- function(models, datasetName, inducerName, k=1){ 
   set.seed(2020)
-  setFilename <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", datasetName, perl=TRUE, ignore.case=TRUE)
-  setFilename <- paste( setFilename, ".", inducerName, ".", setFiletype, sep="")
-  
-  print( paste("Dataset.: ",datasetName, sep="") )
-  print( paste("Filename: ",setFilename, sep="") )
-  cat("\n")
+  file_name <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", datasetName, perl=TRUE, ignore.case=TRUE)
+  file_name <- paste( file_name, ".", inducerName, ".", setFiletype, sep="")
+
+  #uncomment bellow to see de details while the script is running 
+#   print( paste("Dataset.: ",datasetName, sep="") )
+#   print( paste("Filename: ",file_name, sep="") )
+#   cat("\n")
   
   #creating and preparing the dataset
   p <- eval( parse( text=datasetName ) )
@@ -44,8 +79,11 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   x1_max <- max(p$x[,1])+0.2
   x2_min <- min(p$x[,2])-0.2
   x2_max <- max(p$x[,2])+0.2
-  hs <- 0.05 #change by a variable number...
-  grid <- as.matrix(expand.grid(seq(x1_min, x1_max, by = hs), seq(x2_min, x2_max, by = hs)))
+  
+  #all grids will have ~150 steps. *-1 to make the number positive
+  grid_step <- ((x1_min - x1_max) / 150 ) * -1
+  #hs <- 0.05 #changed to 'grid_step' as a variable...
+  grid <- as.matrix(expand.grid(seq(x1_min, x1_max, by = grid_step), seq(x2_min, x2_max, by = grid_step)))
   grid.df <- as.data.frame(grid)
   colnames(grid.df) <- colnames(data[,1:2])
   
@@ -68,7 +106,7 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
   i = 0
   for(mod in models){
     i = i+1
-    model <- eval( parse( text=mod ) )
+    model <- eval(parse(text=mod))
     #getting accuracy in train data
     prediction_train <- predict(model, data[,1:2],type = "class")
     conf_matrix_train <- table(prediction_train, data[,3])
@@ -80,9 +118,7 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
     plotTitle <- paste0(inducerName, k[i])
     plotSubtitle <- paste("training accuracy:",round(accuracy_train,2),"% - test accuracy:",round(accuracy_test,2),"%")
     Z <- predict(model, grid.df, type = "class")
-    if(inducerName == "Deep Learning"){
-      Z = round(Z[,2])
-    }
+      
     plotList[[length(plotList)+1]] <- 
       ggplot()+
       geom_raster(aes_string(x = grid[,1],y = grid[,2],fill= as.factor(Z) ), alpha = 0.3, show.legend = F)+ 
@@ -96,155 +132,150 @@ boundary <- function(models, datasetName, inducerName, k=1, setFiletype="pdf"){
             plot.subtitle=element_text(size = 10, face ="plain", hjust = 0.1, vjust = -1, color = "brown"))
   }
   #arrange the plots according to the number of plots
-  if(length(plotList) == 2){
-    hlay <- rbind(c(1, 2))
-  }else if(length(plotList) == 3){
-    hlay <- rbind(c(1, NA),
-                  c(2, 3))
-  }else if(length(plotList) == 4){
-    hlay <- rbind(c(1, 2),
-                  c(3, 4))
-  }else if(length(plotList) == 5){
-    hlay <- rbind(c( 1,2,3),
-                  c(NA,4,5))
-  }else if(length(plotList) == 6){
-    hlay <- rbind(c(1,2,3),
-                  c(4,5,6))
-  }else if(length(plotList) == 7){
-    hlay <- rbind(c( 1,2,3,4),
-                  c(NA,5,6,7))
-  }else if(length(plotList) == 8){
-    hlay <- rbind(c(1,2,3,4),
-                  c(5,6,7,8))
-  }else if(length(plotList) == 9){
-    hlay <- rbind(c( 1,2,3,4,5),
-                  c(NA,6,7,8,9))
-  }else if(length(plotList) == 10){
-    hlay <- rbind(c(1,2,3,4,5 ),
-                  c(6,7,8,9,10))
-  }else {
-    print("It is configured only up to 10 plots in a single image. If you need more, add it right before this message.")
-  }
+  hlay <- choose_layout(length(plotList))
   #arranging many plots inside a single one - the line bellow print the output 
   grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay)
   #saving to file
-  ggsave(filename = setFilename,
-         #plot = arrangeGrob( grobs=plotList, ncol=length(plotList)),
-         plot = grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay),
-         path = outputPath,
-         width = 297,
-         height = 210,
-         units = "mm")
-  #return (plotList)
+  if(save_plot_to_file == TRUE){
+    ggsave(filename = file_name,
+           plot = grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay),
+           path = outputPath,
+           width = 297,
+           height = 210,
+           units = "mm")
+  }else{
+     print("NOT SAVING AS FILES")
+  }
 }
-#-----------------------------------------------------------------------
-# outputPath = "M:/Estágio PAE/201902 - IA/Boundaries/"
-samples <- 200
-outputPath = "C:/temp/boundaries/"
-setFiletype <- "pdf"
-require(mlbench)
-require(ggplot2)
-require(caret)
-require(lattice)
-require(gridExtra)
 
-datasetNames <- c("mlbench.2dnormals(n=samples, cl=2)",
-                  "mlbench.cassini  (n=samples)",
-                  "mlbench.hypercube(n=samples, d=2, sd=0.3)",
-                  "mlbench.circle   (n=samples, d=2)",
-                  "mlbench.ringnorm (n=samples, d=2)",
-                  "mlbench.shapes   (n=samples)",
-                  "mlbench.simplex  (n=samples, d=2, sd = 0.1)",
-                  "mlbench.smiley   (n=samples, sd1 = 0.1, sd2 = 0.05)",
-                  "mlbench.spirals  (n=samples, cycles=1, sd=0.05)",
-                  "mlbench.spirals  (n=samples, cycles=3, sd=0.05)",
-                  "mlbench.threenorm(n=samples, d=2)",
-                  "mlbench.twonorm  (n=samples, d=2)",
-                  "mlbench.xor      (n=samples, d=2)")
-#double samples then split in half for testing accuracy
-samples = 200
-samples <- samples * 2
-for(datasetName in datasetNames){
-  # KNN
+get_boundaries <- function(datasetNames,
+                           knn,
+                           svm,
+                           trees,
+                           nb,
+                           ann_neu,
+                           ann_its,
+                           ann_fit=FALSE){
+  require(mlbench)
+  require(ggplot2)
   require(caret)
-  inducerName <- "KNN"
-  k = c(1,3,5,10,30)  #k[i]
-  models <- c( "knn3(class ~ ., data=data, k = k[1])",
-               "knn3(class ~ ., data=data, k = k[2])",
-               "knn3(class ~ ., data=data, k = k[3])",
-               "knn3(class ~ ., data=data, k = k[4])",
-               "knn3(class ~ ., data=data, k = k[5])")
-  boundary(models, datasetName, inducerName, k, setFiletype)
-  #---------------------------------------------------------------- 
-  # SVM
-  require(e1071) #cart
-  inducerName <- "SVM"
-  k = c("linear","polynomial","radial","sigmoid")
-  models <- c( "svm(class ~ ., data=data, kernel='linear')",
-               "svm(class ~ ., data=data, kernel='polynomial')",
-               "svm(class ~ ., data=data, kernel='radial')",
-               "svm(class ~ ., data=data, kernel='sigmoid')")
-  boundary(models, datasetName, inducerName, k, setFiletype)
-  #----------------------------------------------------------------
-  #Trees
-  require(C50)
-  require(rpart)
-  library(randomForest)
-  inducerName <- "Trees"
-  k = c("C.50","CART", "Random Forest 3 trees", "Random Forest 128 trees")
-  models <- c("C5.0(class ~ ., data=data)",
-              "rpart(class ~ ., data=data)",
-              "randomForest(class ~ ., data=data, ntree=5)",
-              "randomForest(class ~ ., data=data, ntree=128)")
-  boundary(models, datasetName, inducerName, k, setFiletype)
-  #----------------------------------------------------------------
-  #Naive Bayes
-  require(e1071)
-  inducerName <- "Naive Bayes"
-  models <- "naiveBayes(class ~ ., data=data)"
-  boundary(models, datasetName, inducerName, k="", setFiletype)
-  #----------------------------------------------------------------
-  # #Artificial Neural Network: [qty neurons]
-  require(nnet)
-  inducerName <- "ANN; iters=100; neurons="
-  k = c(1,10,100,500,1000)
-  models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = k[4], maxit = 100, MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = k[5], maxit = 100, MaxNWts = 10000)")
-  boundary(models, datasetName, inducerName, k=k, setFiletype)
-  #----------------------------------------------------------------
-  #Artificial Neural Network: [qty iterations]
-  require(nnet)
-  inducerName <- "ANN; neurons=10; iters="
-  k = c(10,100,500,1000,10000)
-  models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = 10, maxit = k[4], MaxNWts = 10000)",
-              "nnet(class ~ ., data=data, size = 10, maxit = k[5], MaxNWts = 10000)")
-  boundary(models, datasetName, inducerName, k=k, setFiletype)
-  #----------------------------------------------------------------
-  #Artificial Neural Network: [fitting]
-  require(nnet)
-  inducerName <- "ANN; n=100; fitting="
-  k = c("entropy","linout","censored", "softmax")
-  models <- c("nnet(class ~ ., data=data, size = 100, maxit = 1000, entropy  = TRUE)",
-              "nnet(class ~ ., data=data, size = 100, maxit = 1000, linout   = TRUE)",
-              "nnet(class ~ ., data=data, size = 100, maxit = 1000, censored = TRUE)",
-              "nnet(class ~ ., data=data, size = 100, maxit = 1000)")
-  boundary(models, datasetName, inducerName, k=k, setFiletype)
-  #----------------------------------------------------------------
-# #--------NOT-WORKING---------------------------------------------
-# # Linear Discriminant Analysis
-# require(MASS)
-# inducerName <- "Linear Discriminant Analysis (LDA)"
-# models <- "lda(class ~ ., data=data)"
-# 
-# boundary(models, datasetName, inducerName, k="", setFiletype)
-# grid.arrange( grobs=plotList, ncol=length(plotList))
-# 
+  require(lattice)
+  require(gridExtra)
+  
+  for(datasetName in datasetNames){
+    if(knn == TRUE){
+      require(caret)
+      inducerName <- "KNN "
+      k = c(1,3,5,10,30)  #k[i]
+      models <- c( "knn3(class ~ ., data=data, k = k[1])",
+                   "knn3(class ~ ., data=data, k = k[2])",
+                   "knn3(class ~ ., data=data, k = k[3])",
+                   "knn3(class ~ ., data=data, k = k[4])",
+                   "knn3(class ~ ., data=data, k = k[5])")
+      boundary(models, datasetName, inducerName, k)
+    }
+    #----------------------------------------------------------------
+    if(svm == TRUE){
+      require(e1071) #cart
+      inducerName <- "SVM "
+      k = c("linear","Polynomial","Radial","Sigmoid")
+      models <- c( "svm(class ~ ., data=data, kernel='linear')",
+                   "svm(class ~ ., data=data, kernel='polynomial')",
+                   "svm(class ~ ., data=data, kernel='radial')",
+                   "svm(class ~ ., data=data, kernel='sigmoid')")
+      boundary(models, datasetName, inducerName, k)
+    }
+    #----------------------------------------------------------------
+    if(trees == TRUE){
+      require(C50)
+      require(rpart)
+      library(randomForest)
+      inducerName <- "Trees "
+      k = c("C.50","CART", "Random Forest 3 trees", "Random Forest 128 trees")
+      models <- c("C5.0(class ~ ., data=data)",
+                  "rpart(class ~ ., data=data)",
+                  "randomForest(class ~ ., data=data, ntree=5)",
+                  "randomForest(class ~ ., data=data, ntree=128)")
+      boundary(models, datasetName, inducerName, k)
+    }
+    #----------------------------------------------------------------
+    if(nb == TRUE){
+      require(e1071)
+      inducerName <- "Naive Bayes"
+      models <- "naiveBayes(class ~ ., data=data)"
+      boundary(models, datasetName, inducerName, k="")
+    }
+    #----------------------------------------------------------------
+    if(ann_neu == TRUE){ #Artificial Neural Network: [qty neurons]
+      require(nnet)
+      inducerName <- "ANN_iters=100_neurons="
+      k = c(1,10,100,500,1000)
+      models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = k[4], maxit = 100, MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = k[5], maxit = 100, MaxNWts = 10000)")
+      boundary(models, datasetName, inducerName, k=k)
+    }
+    #----------------------------------------------------------------
+    if(ann_its == TRUE){ #Artificial Neural Network: [qty iterations]
+      require(nnet)
+      inducerName <- "ANN_neurons=10_iters="
+      k = c(10,100,500,1000,10000)
+      models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[4], MaxNWts = 10000)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[5], MaxNWts = 10000)")
+      boundary(models, datasetName, inducerName, k=k)
+    }
+#-----------------------not-working-----------------------------------
+    if(ann_fit == TRUE){ #Artificial Neural Network: [fitting]
+      print("ENTREI")
+#       require(nnet)
+#       inducerName <- "ANN_neurons=100_fitting="
+#       k = c("logistic","softmax","linout","censored", "entropy")
+#       models <- c("nnet(class ~ ., data=data, size = 100, maxit = 1000)",
+#                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, softmax  = TRUE)",
+#                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, linout   = TRUE)",
+#                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, censored = TRUE)",
+#                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, entropy  = TRUE)")
+#       boundary(models, datasetName, inducerName, k=k)
+    }
+  }
 }
 
+#Setting the parameters
+#use a low number of samples to have a better view of the boundaries
+samples     <- 200
+outputPath  <- ""
+save_plot_to_file <- FALSE
+setFiletype <- "pdf"
 
+#High values of standard deviation (sd) leads to very mixed classes
+datasetNames <- c("mlbench.2dnormals(n=samples, cl=2)",
+                  "mlbench.cassini(n=samples)",
+                  "mlbench.hypercube(n=samples, d=2, sd=0.3)",
+                  "mlbench.circle(n=samples, d=2)",
+                  "mlbench.ringnorm(n=samples, d=2)",
+                  "mlbench.shapes(n=samples)",
+                  "mlbench.simplex(n=samples, d=2, sd = 0.3)",
+                  "mlbench.smiley(n=samples, sd1 = 0.1, sd2 = 0.3)",
+                  #"mlbench.spirals(n=samples, cycles=1, sd=0.0)",
+                  "mlbench.spirals(n=samples, cycles=3, sd=0.0)",
+                  "mlbench.threenorm(n=samples, d=2)",
+                  "mlbench.twonorm(n=samples, d=2)",
+                  "mlbench.xor(n=samples, d=2)")
+
+#double samples then split in half for testing accuracy
+samples <- samples * 2
+
+#Running the script
+get_boundaries(datasetNames,
+               knn     <- TRUE,  #K-nearest neighbors
+               svm     <- TRUE,  #Support-vector machine
+               trees   <- TRUE,  #tree-based
+               nb      <- TRUE,  #Naive Bayes
+               ann_neu <- TRUE,  #Artificial neural network increasing neurons
+               ann_its <- TRUE,  #Artificial neural network increasing iterations
+               ann_fit <- FALSE) #Artificial neural network changing functions
