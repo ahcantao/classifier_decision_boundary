@@ -166,7 +166,7 @@ get_boundaries <- function(dataset_names,
     if(knn == TRUE){
       require(caret)
       inducer_name <- "KNN "
-      k = c(1,3,5,10,30)  #k[i]
+      k <- c(1, 3, 5, 10, 30)  #k[i]
       models <- c( "knn3(class ~ ., data=data, k = k[1])",
                    "knn3(class ~ ., data=data, k = k[2])",
                    "knn3(class ~ ., data=data, k = k[3])",
@@ -178,7 +178,7 @@ get_boundaries <- function(dataset_names,
     if(svm == TRUE){
       require(e1071) #cart
       inducer_name <- "SVM "
-      k = c("linear","Polynomial","Radial","Sigmoid")
+      k <- c("linear", "Polynomial", "Radial", "Sigmoid")
       models <- c( "svm(class ~ ., data=data, kernel='linear')",
                    "svm(class ~ ., data=data, kernel='polynomial')",
                    "svm(class ~ ., data=data, kernel='radial')",
@@ -191,10 +191,10 @@ get_boundaries <- function(dataset_names,
       require(rpart)
       library(randomForest)
       inducer_name <- "Trees "
-      k = c("C.50","CART", "Random Forest 3 trees", "Random Forest 128 trees")
+      k <- c("C.50","CART", "Random Forest 3 trees", "Random Forest 128 trees")
       models <- c("C5.0(class ~ ., data=data)",
                   "rpart(class ~ ., data=data)",
-                  "randomForest(class ~ ., data=data, ntree=5)",
+                  "randomForest(class ~ ., data=data, ntree=3)",
                   "randomForest(class ~ ., data=data, ntree=128)")
       boundary(models, dataset_name, inducer_name, k)
     }
@@ -203,13 +203,13 @@ get_boundaries <- function(dataset_names,
       require(e1071)
       inducer_name <- "Naive Bayes"
       models <- "naiveBayes(class ~ ., data=data)"
-      boundary(models, dataset_name, inducer_name, k="")
+      boundary(models, dataset_name, inducer_name, k = "")
     }
     #----------------------------------------------------------------
     if(ann_neu == TRUE){ #Artificial Neural Network: [qty neurons]
       require(nnet)
       inducer_name <- "ANN_iters=100_neurons="
-      k = c(1,10,100,500,1000)
+      k <- c(1, 10, 100, 500, 1000)
       models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000)",
@@ -221,7 +221,7 @@ get_boundaries <- function(dataset_names,
     if(ann_its == TRUE){ #Artificial Neural Network: [qty iterations]
       require(nnet)
       inducer_name <- "ANN_neurons=10_iters="
-      k = c(10,100,500,1000,10000)
+      k <- c(10, 100, 500, 1000, 10000)
       models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000)",
@@ -234,7 +234,7 @@ get_boundaries <- function(dataset_names,
       print("ENTREI")
 #       require(nnet)
 #       inducer_name <- "ANN_neurons=100_fitting="
-#       k = c("logistic","softmax","linout","censored", "entropy")
+#       k <- c("logistic", "softmax", "linout", "censored", "entropy")
 #       models <- c("nnet(class ~ ., data=data, size = 100, maxit = 1000)",
 #                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, softmax  = TRUE)",
 #                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, linout   = TRUE)",
