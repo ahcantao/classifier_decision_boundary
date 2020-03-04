@@ -2,12 +2,12 @@
 #First released on August, 2019
 
 #Installing needed packages - if not installed already
-installPackages <- function(packs) {
+install_packages <- function(packs) {
   for (pack in packs){
     if (!pack %in% installed.packages()) install.packages(pack)
   }
 }
-installPackages(packs=c("ggplot2","grid","gridExtra","mlbench","caret","e1071",
+install_packages(packs=c("ggplot2","grid","gridExtra","mlbench","caret","e1071",
                         "C50","rpart","randomForest","nnet","neuralnet","mlogit"))
 
 #function to get plot ids to arrange the plotting order in grid.arrange()
@@ -50,18 +50,18 @@ choose_layout <- function(size){
   return(hlay)
 }
 
-boundary <- function(models, datasetName, inducerName, k=1){ 
+boundary <- function(models, dataset_name, inducer_name, k=1){ 
   set.seed(2020)
-  file_name <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", datasetName, perl=TRUE, ignore.case=TRUE)
-  file_name <- paste( file_name, ".", inducerName, ".", setFiletype, sep="")
+  file_name <- gsub("\\([\\w\\d\\s\\=\\.,]*\\)", "", dataset_name, perl=TRUE, ignore.case=TRUE)
+  file_name <- paste( file_name, ".", inducer_name, ".", file_extension, sep="")
 
   #uncomment bellow to see de details while the script is running 
-#   print( paste("Dataset.: ",datasetName, sep="") )
+#   print( paste("Dataset.: ",dataset_name, sep="") )
 #   print( paste("Filename: ",file_name, sep="") )
 #   cat("\n")
   
   #creating and preparing the dataset
-  p <- eval( parse( text=datasetName ) )
+  p <- eval(parse(text = dataset_name))
   data <- data.frame(p$x[,1], p$x[,2], p$class)
   names(data) <- c("x1","x2","class")
   
@@ -70,9 +70,9 @@ boundary <- function(models, datasetName, inducerName, k=1){
   test <- data[-sample_index, ]
   data <- data[sample_index, ]
   
-  plotTitle <- "Dataset"
+  plot_title <- "Dataset"
   #replacing the text 'samples' by the variable value and save the whole string as title
-  plotSubtitle <- gsub("samples", samples/2, datasetName)
+  plot_subtitle <- gsub("samples", samples/2, dataset_name)
   
   #preparing background grid area
   x1_min <- min(p$x[,1])-0.2
@@ -88,14 +88,14 @@ boundary <- function(models, datasetName, inducerName, k=1){
   colnames(grid.df) <- colnames(data[,1:2])
   
   #saving the raw dataset - without any model
-  plotList <- list()
-  plotList[[length(plotList)+1]] <- 
+  plots <- list()
+  plots[[length(plots)+1]] <- 
     ggplot(data) + 
     geom_point(aes(x=x1, y=x2, color = as.character(class)), size = 1) + 
     theme_bw(base_size = 15) +
     xlim(x1_min, x1_max) + 
     ylim(x2_min, x2_max) +
-    labs(title = plotTitle, subtitle = plotSubtitle) +
+    labs(title = plot_title, subtitle = plot_subtitle) +
     coord_fixed(ratio = 0.8) +
     theme(axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
           axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none',
@@ -115,16 +115,16 @@ boundary <- function(models, datasetName, inducerName, k=1){
     prediction_test <- predict(model, test[,1:2],type = "class")
     conf_matrix_test <- table(prediction_test, test[,3])
     accuracy_test <- (sum(diag(conf_matrix_test)) / sum(conf_matrix_test)) * 100
-    plotTitle <- paste0(inducerName, k[i])
-    plotSubtitle <- paste("training accuracy:",round(accuracy_train,2),"% - test accuracy:",round(accuracy_test,2),"%")
+    plot_title <- paste0(inducer_name, k[i])
+    plot_subtitle <- paste("training accuracy:",round(accuracy_train,2),"% - test accuracy:",round(accuracy_test,2),"%")
     Z <- predict(model, grid.df, type = "class")
       
-    plotList[[length(plotList)+1]] <- 
+    plots[[length(plots)+1]] <- 
       ggplot()+
       geom_raster(aes_string(x = grid[,1],y = grid[,2],fill= as.factor(Z) ), alpha = 0.3, show.legend = F)+ 
       geom_point(data = data, aes(x=x1, y=x2, color = as.character(class)), size = 1) + 
       theme_bw(base_size = 15) +
-      labs(title = plotTitle, subtitle = plotSubtitle) +
+      labs(title = plot_title, subtitle = plot_subtitle) +
       coord_fixed(ratio = 0.8) + 
       theme(axis.ticks=element_blank(), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
             axis.text=element_blank(), axis.title=element_blank(), legend.position = 'none', 
@@ -132,23 +132,23 @@ boundary <- function(models, datasetName, inducerName, k=1){
             plot.subtitle=element_text(size = 10, face ="plain", hjust = 0.1, vjust = -1, color = "brown"))
   }
   #arrange the plots according to the number of plots
-  hlay <- choose_layout(length(plotList))
+  hlay <- choose_layout(length(plots))
   #arranging many plots inside a single one - the line bellow print the output 
-  grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay)
+  grid.arrange(grobs=plots[select_grobs(hlay)], layout_matrix=hlay)
   #saving to file
   if(save_plot_to_file == TRUE){
     ggsave(filename = file_name,
-           plot = grid.arrange(grobs=plotList[select_grobs(hlay)], layout_matrix=hlay),
+           plot = grid.arrange(grobs=plots[select_grobs(hlay)], layout_matrix=hlay),
            path = outputPath,
            width = 297,
            height = 210,
            units = "mm")
   }else{
-     print("NOT SAVING AS FILES")
+     print("NOT SAVING")
   }
 }
 
-get_boundaries <- function(datasetNames,
+get_boundaries <- function(dataset_names,
                            knn,
                            svm,
                            trees,
@@ -162,85 +162,85 @@ get_boundaries <- function(datasetNames,
   require(lattice)
   require(gridExtra)
   
-  for(datasetName in datasetNames){
+  for(dataset_name in dataset_names){
     if(knn == TRUE){
       require(caret)
-      inducerName <- "KNN "
+      inducer_name <- "KNN "
       k = c(1,3,5,10,30)  #k[i]
       models <- c( "knn3(class ~ ., data=data, k = k[1])",
                    "knn3(class ~ ., data=data, k = k[2])",
                    "knn3(class ~ ., data=data, k = k[3])",
                    "knn3(class ~ ., data=data, k = k[4])",
                    "knn3(class ~ ., data=data, k = k[5])")
-      boundary(models, datasetName, inducerName, k)
+      boundary(models, dataset_name, inducer_name, k)
     }
     #----------------------------------------------------------------
     if(svm == TRUE){
       require(e1071) #cart
-      inducerName <- "SVM "
+      inducer_name <- "SVM "
       k = c("linear","Polynomial","Radial","Sigmoid")
       models <- c( "svm(class ~ ., data=data, kernel='linear')",
                    "svm(class ~ ., data=data, kernel='polynomial')",
                    "svm(class ~ ., data=data, kernel='radial')",
                    "svm(class ~ ., data=data, kernel='sigmoid')")
-      boundary(models, datasetName, inducerName, k)
+      boundary(models, dataset_name, inducer_name, k)
     }
     #----------------------------------------------------------------
     if(trees == TRUE){
       require(C50)
       require(rpart)
       library(randomForest)
-      inducerName <- "Trees "
+      inducer_name <- "Trees "
       k = c("C.50","CART", "Random Forest 3 trees", "Random Forest 128 trees")
       models <- c("C5.0(class ~ ., data=data)",
                   "rpart(class ~ ., data=data)",
                   "randomForest(class ~ ., data=data, ntree=5)",
                   "randomForest(class ~ ., data=data, ntree=128)")
-      boundary(models, datasetName, inducerName, k)
+      boundary(models, dataset_name, inducer_name, k)
     }
     #----------------------------------------------------------------
     if(nb == TRUE){
       require(e1071)
-      inducerName <- "Naive Bayes"
+      inducer_name <- "Naive Bayes"
       models <- "naiveBayes(class ~ ., data=data)"
-      boundary(models, datasetName, inducerName, k="")
+      boundary(models, dataset_name, inducer_name, k="")
     }
     #----------------------------------------------------------------
     if(ann_neu == TRUE){ #Artificial Neural Network: [qty neurons]
       require(nnet)
-      inducerName <- "ANN_iters=100_neurons="
+      inducer_name <- "ANN_iters=100_neurons="
       k = c(1,10,100,500,1000)
       models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = k[4], maxit = 100, MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = k[5], maxit = 100, MaxNWts = 10000)")
-      boundary(models, datasetName, inducerName, k=k)
+      boundary(models, dataset_name, inducer_name, k=k)
     }
     #----------------------------------------------------------------
     if(ann_its == TRUE){ #Artificial Neural Network: [qty iterations]
       require(nnet)
-      inducerName <- "ANN_neurons=10_iters="
+      inducer_name <- "ANN_neurons=10_iters="
       k = c(10,100,500,1000,10000)
       models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = 10, maxit = k[4], MaxNWts = 10000)",
                   "nnet(class ~ ., data=data, size = 10, maxit = k[5], MaxNWts = 10000)")
-      boundary(models, datasetName, inducerName, k=k)
+      boundary(models, dataset_name, inducer_name, k=k)
     }
 #-----------------------not-working-----------------------------------
     if(ann_fit == TRUE){ #Artificial Neural Network: [fitting]
       print("ENTREI")
 #       require(nnet)
-#       inducerName <- "ANN_neurons=100_fitting="
+#       inducer_name <- "ANN_neurons=100_fitting="
 #       k = c("logistic","softmax","linout","censored", "entropy")
 #       models <- c("nnet(class ~ ., data=data, size = 100, maxit = 1000)",
 #                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, softmax  = TRUE)",
 #                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, linout   = TRUE)",
 #                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, censored = TRUE)",
 #                   "nnet(class ~ ., data=data, size = 100, maxit = 1000, entropy  = TRUE)")
-#       boundary(models, datasetName, inducerName, k=k)
+#       boundary(models, dataset_name, inducer_name, k=k)
     }
   }
 }
@@ -249,11 +249,11 @@ get_boundaries <- function(datasetNames,
 #use a low number of samples to have a better view of the boundaries
 samples     <- 200
 outputPath  <- ""
-save_plot_to_file <- FALSE
-setFiletype <- "pdf"
+save_plot_to_file <- FALSE #if false, will plot, but not save
+file_extension <- "pdf"
 
 #High values of standard deviation (sd) leads to very mixed classes
-datasetNames <- c("mlbench.2dnormals(n=samples, cl=2)",
+dataset_names <- c("mlbench.2dnormals(n=samples, cl=2)",
                   "mlbench.cassini(n=samples)",
                   "mlbench.hypercube(n=samples, d=2, sd=0.3)",
                   "mlbench.circle(n=samples, d=2)",
@@ -271,7 +271,7 @@ datasetNames <- c("mlbench.2dnormals(n=samples, cl=2)",
 samples <- samples * 2
 
 #Running the script
-get_boundaries(datasetNames,
+get_boundaries(dataset_names,
                knn     <- TRUE,  #K-nearest neighbors
                svm     <- TRUE,  #Support-vector machine
                trees   <- TRUE,  #tree-based
