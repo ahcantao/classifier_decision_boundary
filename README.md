@@ -42,4 +42,4 @@ install_packages(packs=c("ggplot2","grid","gridExtra","mlbench","caret","e1071",
 
 ## Authors
 * **Adriano Henrique Cantão** - [ahCantao](https://github.com/ahcantao)
-* **José Augusto Baranauskas**
+* José Augusto Baranauskas
