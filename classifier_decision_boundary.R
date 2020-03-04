@@ -210,11 +210,11 @@ get_boundaries <- function(dataset_names,
       require(nnet)
       inducer_name <- "ANN_iters=100_neurons="
       k <- c(1, 10, 100, 500, 1000)
-      models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = k[4], maxit = 100, MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = k[5], maxit = 100, MaxNWts = 10000)")
+      models <- c("nnet(class ~ ., data=data, size = k[1], maxit = 100, MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = k[2], maxit = 100, MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = k[3], maxit = 100, MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = k[4], maxit = 100, MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = k[5], maxit = 100, MaxNWts = 10000, trace = FALSE)")
       boundary(models, dataset_name, inducer_name, k=k)
     }
     #----------------------------------------------------------------
@@ -222,11 +222,11 @@ get_boundaries <- function(dataset_names,
       require(nnet)
       inducer_name <- "ANN_neurons=10_iters="
       k <- c(10, 100, 500, 1000, 10000)
-      models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = 10, maxit = k[4], MaxNWts = 10000)",
-                  "nnet(class ~ ., data=data, size = 10, maxit = k[5], MaxNWts = 10000)")
+      models <- c("nnet(class ~ ., data=data, size = 10, maxit = k[1], MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[2], MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[3], MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[4], MaxNWts = 10000, trace = FALSE)",
+                  "nnet(class ~ ., data=data, size = 10, maxit = k[5], MaxNWts = 10000, trace = FALSE)")
       boundary(models, dataset_name, inducer_name, k=k)
     }
 #-----------------------not-working-----------------------------------
